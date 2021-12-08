@@ -1,0 +1,153 @@
+local function put_food(self) -- <1>
+	self.food = {x = math.random(2, 40), y = math.random(2, 24)} -- <2>
+	tilemap.set_tile("#grid", "layer1", self.food.x, self.food.y, 3) -- <3>
+end
+MAT_WIDTH = 60
+MAT_HEIGHT = 40
+DIRECTION = {
+	{dx = 2, dy = 0},
+	{dx = -2, dy = 0},
+	{dx = 0, dy = 2},
+	{dx = 0, dy = -2}
+}
+
+-- PRIM STUFF
+
+local function is_valid(x, y)
+	return (1 <= x and x < MAT_WIDTH) and (1 <= y and y < MAT_HEIGHT)
+end
+
+local function cells_around(mat, cell, is_wall)
+	local frontier = {}
+	for i, dir = ipair(DIRECTION) do
+		local n_row = cell.x + dir.dx
+		local n_col = cell.y + dir.dy
+		if is_valid(n_row, n_col) and mat[n_row][n_col] == is_wall then
+			table.insert(frontier, {x = n_row, y = n_col})
+		end
+	end
+	return frontier
+end
+
+local function frontier_cells_of(mat, cell)
+	return cells_around(mat, cell, 4)
+end
+
+local function passage_cells_of(mat, cell)
+	return cells_around(mat, cell, 1)
+end
+
+local function connect(frontier_cell, neighbor, mat)
+	local in_between_row = (frontier_cell.x + neighbor.x) / 2
+	local in_between_col = (frontier_cell.y + neighbor.y) / 2
+	mat[frontier_cell.x][frontier_cell.y] = 1
+	mat[neighbor.x][neighbor.y] = 1
+	mat[in_between_row][in_between_col] = 1
+end
+
+
+local function prim_maze_generation(self)
+	local mat = {}
+	-- 2,2 -> 59, 39
+	for i = 1, 39 do
+		mat[i] = {}
+		for j = 1, 59 do
+			mat[i][j] = 4
+		end
+	end
+	local frontier = {}
+	local x = math.random(1, 59)
+	local y = math.random(1, 39)
+	table.insert(frontier, frontier_cells_of(mat, {x = x, y = y}))
+	while #frontier > 0 do
+		local idx = math.floor(math.random(random(1, #frontier)))
+		frontier_cell = frontier[idx]
+		frontier_neighbor = passage_cells_of(mat, frontier_cell)
+
+		if #frontier_neighbor > 0 then
+			neighbor = frontier_neighbor[math.floor(math.random(1, #frontier_neighbor))]
+			connect(frontier_cell, neighbor, mat)
+		end
+		for u, k in ipairs(frontier_cells_of(mat, frontier_cell)) do
+			table.insert(frontier, k)
+		end
+		table.remove(frontier, idx)
+	end
+end
+
+function init(self)
+	msg.post(".", "acquire_input_focus") -- <1>\
+	-- print("Hello World")
+	-- self.segments = {
+	-- 	{x = 7, y = 5},
+	-- 	{x = 8, y = 5},
+	-- 	{x = 9, y = 5},
+	-- 	{x = 10, y = 5} } -- <1>
+	-- self.dir = {dx = 1, dy = 0} -- <2>
+	-- self.speed = 7.0 -- <3>
+	-- self.alive = true
+	-- self.t = 0 -- <4>
+	-- math.randomseed(socket.gettime())
+	-- put_food(self)
+	prim_maze_generation(self)
+end
+
+function final(self)
+	-- Add finalization code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function update(self, dt)
+-- 	self.t = self.t + dt -- <1>
+-- 	if self.alive and self.t >= 1.0 / self.speed then -- <2>        
+-- 		local head = self.segments[#self.segments] -- <3>
+-- 		local newhead = {x = head.x + self.dir.dx, y = head.y + self.dir.dy} -- <4>
+-- 		print(tilemap.get_bounds("#grid"))
+-- 		local tile = tilemap.get_tile("#grid", "layer1", newhead.x, newhead.y)
+-- 		print(tile)
+-- 		table.insert(self.segments, newhead) -- <5>
+-- 
+-- 		if tile == 2 or tile == 4 then
+-- 			self.alive = false
+-- 		end
+-- 		for i, s in ipairs(self.segments) do -- <8>
+-- 			tilemap.set_tile("#grid", "layer1", s.x, s.y, 2) -- <9>
+-- 		end
+-- 
+-- 		if tile ~= 3 then
+-- 			local tail = table.remove(self.segments, 1) -- <6>
+-- 			tilemap.set_tile("#grid", "layer1", tail.x, tail.y, 0) -- <7>
+-- 		else
+-- 			put_food(self)
+-- 		end
+-- 		self.t = 0 -- <10>
+-- 	end
+end
+function on_message(self, message_id, message, sender)
+	-- Add message-handling code here
+	-- Learn more: https://defold.com/manuals/message-passing/
+	-- Remove this function if not needed
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("up") and action.pressed then -- <1>
+		self.dir.dx = 0 -- <2>
+		self.dir.dy = 1
+	elseif action_id == hash("down") and action.pressed then
+		self.dir.dx = 0
+		self.dir.dy = -1
+	elseif action_id == hash("left") and action.pressed then
+		self.dir.dx = -1
+		self.dir.dy = 0
+	elseif action_id == hash("right") and action.pressed then
+		self.dir.dx = 1
+		self.dir.dy = 0
+	end
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Learn more: https://defold.com/manuals/hot-reload/
+	-- Remove this function if not needed
+end
