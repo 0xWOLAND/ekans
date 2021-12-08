@@ -60,7 +60,7 @@ local function prim_maze_generation(self)
 	local y = math.random(1, 39)
 	table.insert(frontier, frontier_cells_of(mat, {x = x, y = y}))
 	while #frontier > 0 do
-		local idx = math.floor(math.random(random(1, #frontier)))
+		local idx = math.floor(math.random(1, #frontier))
 		frontier_cell = frontier[idx]
 		frontier_neighbor = passage_cells_of(mat, frontier_cell)
 
